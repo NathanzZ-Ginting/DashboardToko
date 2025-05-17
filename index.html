@@ -139,6 +139,11 @@
 
     simpanData();
     document.getElementById("jumlahBeli").value = "";
+
+    // Fitur alert stok hampir habis
+    if (selected.stok < 5) {
+      alert(`⚠️ Stok barang "${selected.nama}" tersisa hanya ${selected.stok}. Segera lakukan restock!`);
+    }
   }
 
   function renderBarang() {
@@ -153,6 +158,13 @@
       info.textContent = `${b.nama} — Stok: ${b.stok} — Harga: ${formatRupiah(b.harga)}`;
       info.onclick = () => tampilkanHistory(b.nama);
 
+      // Label stok hampir habis (stok < 5)
+      const labelStok = document.createElement("span");
+      if (b.stok < 5) {
+        labelStok.textContent = "⚠️ Stok hampir habis!";
+        labelStok.classList.add("text-red-600", "font-bold", "ml-2");
+      }
+
       const btnHapus = document.createElement("button");
       btnHapus.textContent = "Hapus";
       btnHapus.classList.add("bg-red-600", "hover:bg-red-700", "text-white", "text-xs", "font-semibold", "py-1", "px-3", "rounded");
@@ -163,6 +175,7 @@
       };
 
       li.appendChild(info);
+      if (b.stok < 5) li.appendChild(labelStok);
       li.appendChild(btnHapus);
       daftar.appendChild(li);
     });
@@ -207,21 +220,23 @@
   }
 
   function tampilkanHistory(nama) {
-    const isi = document.getElementById("modalIsi");
     const modal = document.getElementById("modalHistory");
-    const label = document.getElementById("modalNama");
+    const modalNama = document.getElementById("modalNama");
+    const modalIsi = document.getElementById("modalIsi");
 
-    label.textContent = nama;
-    isi.innerHTML = "";
+    modalNama.textContent = nama;
+    modalIsi.innerHTML = "";
 
-    const related = transaksi.filter(t => t.nama === nama);
-    if (related.length === 0) {
-      isi.innerHTML = "<li>Belum ada transaksi</li>";
+    // Filter transaksi yang sesuai nama barang
+    const riwayat = transaksi.filter(t => t.nama === nama);
+
+    if (riwayat.length === 0) {
+      modalIsi.innerHTML = "<li>Tidak ada riwayat transaksi.</li>";
     } else {
-      related.slice().reverse().forEach(t => {
+      riwayat.forEach(t => {
         const li = document.createElement("li");
-        li.textContent = `${t.waktu} — Beli: ${t.jumlah}, Stok: ${t.stokAwal}→${t.stokAkhir}, Total: ${formatRupiah(t.total)}`;
-        isi.appendChild(li);
+        li.textContent = `${t.waktu} - Jumlah: ${t.jumlah}, Total: ${formatRupiah(t.total)}, Stok awal: ${t.stokAwal}, Stok akhir: ${t.stokAkhir}`;
+        modalIsi.appendChild(li);
       });
     }
 
@@ -232,20 +247,8 @@
     document.getElementById("modalHistory").classList.add("hidden");
   }
 
+  // Inisialisasi awal
   simpanData();
-
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js").catch(() => {
-      console.log("Service worker gagal didaftarkan");
-    });
-  }
-
-  function logout() {
-    if (confirm("Yakin logout?")) {
-      localStorage.clear();
-      location.href = "login.html";
-    }
-  }
 </script>
 </body>
 </html>
