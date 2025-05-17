@@ -4,10 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0f172a" />
-  <link rel="manifest" href="manifest.json" />
   <title>TokoKu QRIS</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="auth.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans">
   <div class="container mx-auto p-6 max-w-3xl">
@@ -30,10 +28,23 @@
     <!-- Form Tambah Barang -->
     <section class="mb-8 bg-slate-800 p-4 rounded shadow">
       <h2 class="text-2xl font-semibold mb-4">Tambah / Update Barang</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <input id="namaBarang" type="text" placeholder="Nama Barang" class="p-3 rounded text-black focus:outline-none" />
         <input id="stokBarang" type="number" min="1" placeholder="Stok" class="p-3 rounded text-black focus:outline-none" />
         <input id="hargaBarang" type="number" min="1000" step="100" placeholder="Harga (Rp)" class="p-3 rounded text-black focus:outline-none" />
+        <select id="kategoriBarang" class="p-3 rounded text-black focus:outline-none">
+          <option value="">Pilih Kategori</option>
+          <option value="Anak-Anak">Anak-Anak</option>
+          <option value="Pria">Pria</option>
+          <option value="Wanita">Wanita</option>
+        </select>
+      </div>
+      <div class="mt-2">
+        <select id="subkategoriBarang" class="p-3 rounded text-black focus:outline-none hidden">
+          <option value="">Pilih Subkategori</option>
+          <option value="BH">BH</option>
+          <option value="Celana Dalam">Celana Dalam</option>
+        </select>
       </div>
       <button onclick="tambahBarang()" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 transition rounded py-3 font-semibold">Simpan Barang</button>
     </section>
@@ -50,8 +61,7 @@
     <section class="mb-8 bg-slate-800 p-4 rounded shadow">
       <h2 class="text-2xl font-semibold mb-4 flex justify-between items-center">
         Riwayat Transaksi
-        <button onclick="resetTransaksi()" 
-                class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded text-sm">
+        <button onclick="resetTransaksi()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded text-sm">
           Reset Transaksi
         </button>
       </h2>
@@ -82,6 +92,18 @@
   let barang = JSON.parse(localStorage.getItem("barang")) || [];
   let transaksi = JSON.parse(localStorage.getItem("transaksi")) || [];
 
+  const kategoriSelect = document.getElementById("kategoriBarang");
+  const subkategoriSelect = document.getElementById("subkategoriBarang");
+
+  kategoriSelect.addEventListener("change", () => {
+    if (kategoriSelect.value === "Anak-Anak") {
+      subkategoriSelect.classList.remove("hidden");
+    } else {
+      subkategoriSelect.classList.add("hidden");
+      subkategoriSelect.value = "";
+    }
+  });
+
   function simpanData() {
     localStorage.setItem("barang", JSON.stringify(barang));
     localStorage.setItem("transaksi", JSON.stringify(transaksi));
@@ -95,24 +117,38 @@
     const nama = document.getElementById("namaBarang").value.trim();
     const stok = parseInt(document.getElementById("stokBarang").value);
     const harga = parseInt(document.getElementById("hargaBarang").value);
+    const kategori = kategoriSelect.value;
+    const subkategori = subkategoriSelect.value;
 
-    if (!nama || !(stok > 0) || !(harga >= 1000)) {
+    if (!nama || !(stok > 0) || !(harga >= 1000) || !kategori) {
       alert("Lengkapi semua field dengan benar!");
       return;
     }
+    if (kategori === "Anak-Anak" && !subkategori) {
+      alert("Pilih subkategori untuk kategori Anak-Anak!");
+      return;
+    }
 
-    const index = barang.findIndex(b => b.nama.toLowerCase() === nama.toLowerCase());
+    const index = barang.findIndex(b => 
+      b.nama.toLowerCase() === nama.toLowerCase() &&
+      b.kategori === kategori &&
+      b.subkategori === subkategori
+    );
+
     if (index !== -1) {
       barang[index].stok += stok;
       barang[index].harga = harga;
     } else {
-      barang.push({ nama, stok, harga });
+      barang.push({ nama, stok, harga, kategori, subkategori });
     }
 
     simpanData();
     document.getElementById("namaBarang").value = "";
     document.getElementById("stokBarang").value = "";
     document.getElementById("hargaBarang").value = "";
+    kategoriSelect.value = "";
+    subkategoriSelect.value = "";
+    subkategoriSelect.classList.add("hidden");
   }
 
   function tambahTransaksi() {
@@ -134,120 +170,121 @@
       total: jumlah * selected.harga,
       waktu: new Date().toLocaleString(),
       stokAwal: stokSebelum,
-      stokAkhir: selected.stok
+      stokAkhir: selected.stok,
+      kategori: selected.kategori,
+      subkategori: selected.subkategori,
     });
 
     simpanData();
-    document.getElementById("jumlahBeli").value = "";
-
-    // Fitur alert stok hampir habis
-    if (selected.stok < 5) {
-      alert(`⚠️ Stok barang "${selected.nama}" tersisa hanya ${selected.stok}. Segera lakukan restock!`);
+    if (selected.stok <= 3) {
+      alert(`Stok barang "${selected.nama}" hampir habis (${selected.stok} tersisa)!`);
     }
+
+    document.getElementById("jumlahBeli").value = "";
+    document.getElementById("pilihBarang").value = "";
   }
 
   function renderBarang() {
-    const daftar = document.getElementById("daftarBarang");
-    daftar.innerHTML = "";
+    const list = document.getElementById("daftarBarang");
+    list.innerHTML = "";
+
     barang.forEach((b, i) => {
       const li = document.createElement("li");
-      li.classList.add("flex", "justify-between", "items-center", "mb-1");
+      li.className = "flex justify-between items-center mb-2";
 
       const info = document.createElement("span");
-      info.classList.add("cursor-pointer", "hover:underline", "text-blue-400");
-      info.textContent = `${b.nama} — Stok: ${b.stok} — Harga: ${formatRupiah(b.harga)}`;
-      info.onclick = () => tampilkanHistory(b.nama);
+      info.className = "cursor-pointer hover:underline " + (b.stok <= 3 ? "text-red-500" : "");
+      info.textContent = `${b.nama} (${b.kategori}${b.subkategori ? " > " + b.subkategori : ""}) - Stok: ${b.stok} - Harga: ${formatRupiah(b.harga)}`;
+      info.title = "Klik untuk lihat history";
+      info.onclick = () => showHistory(b.nama, b.kategori, b.subkategori);
 
-      // Label stok hampir habis (stok < 5)
-      const labelStok = document.createElement("span");
-      if (b.stok < 5) {
-        labelStok.textContent = "⚠️ Stok hampir habis!";
-        labelStok.classList.add("text-red-600", "font-bold", "ml-2");
-      }
-
-      const btnHapus = document.createElement("button");
-      btnHapus.textContent = "Hapus";
-      btnHapus.classList.add("bg-red-600", "hover:bg-red-700", "text-white", "text-xs", "font-semibold", "py-1", "px-3", "rounded");
-      btnHapus.onclick = () => {
-        if(confirm(`Yakin hapus barang "${b.nama}"?`)) {
-          hapusBarang(i);
-        }
-      };
+      const btn = document.createElement("button");
+      btn.textContent = "Hapus";
+      btn.className = "ml-4 px-2 py-1 text-sm rounded bg-red-600 hover:bg-red-700 text-white";
+      btn.onclick = () => hapusBarang(i);
 
       li.appendChild(info);
-      if (b.stok < 5) li.appendChild(labelStok);
-      li.appendChild(btnHapus);
-      daftar.appendChild(li);
+      li.appendChild(btn);
+      list.appendChild(li);
     });
   }
 
+  function hapusBarang(index) {
+    if (confirm(`Yakin ingin menghapus barang "${barang[index].nama}"?`)) {
+      barang.splice(index, 1);
+      simpanData();
+    }
+  }
+
+
   function renderTransaksi() {
-    const daftar = document.getElementById("riwayatTransaksi");
-    daftar.innerHTML = "";
-    transaksi.slice().reverse().forEach(t => {
+    const list = document.getElementById("riwayatTransaksi");
+    list.innerHTML = "";
+    transaksi.forEach(t => {
       const li = document.createElement("li");
-      li.textContent = `${t.waktu} - ${t.nama} (${t.jumlah}) = ${formatRupiah(t.total)}`;
-      daftar.appendChild(li);
+      li.className = t.stokAkhir <= 3 ? "text-red-500" : "";
+      li.textContent = `${t.waktu} - ${t.nama} (${t.kategori}${t.subkategori ? " > " + t.subkategori : ""}) - ${t.jumlah} x ${formatRupiah(t.total / t.jumlah)} = ${formatRupiah(t.total)}`;
+      list.appendChild(li);
     });
   }
 
   function updateSelect() {
     const select = document.getElementById("pilihBarang");
-    select.innerHTML = "<option value=''>Pilih Barang</option>";
+    select.innerHTML = '<option value="">Pilih Barang</option>';
     barang.forEach((b, i) => {
       const opt = document.createElement("option");
       opt.value = i;
-      opt.textContent = `${b.nama} (Stok: ${b.stok})`;
+      opt.textContent = `${b.nama} (${b.kategori}${b.subkategori ? " > " + b.subkategori : ""}) - Stok: ${b.stok}`;
       select.appendChild(opt);
     });
   }
 
   function updatePemasukan() {
-    const total = transaksi.reduce((sum, t) => sum + t.total, 0);
+    const total = transaksi.reduce((acc, curr) => acc + curr.total, 0);
     document.getElementById("totalPemasukan").textContent = formatRupiah(total);
   }
 
   function resetTransaksi() {
-    if (confirm("Yakin ingin menghapus semua riwayat transaksi?")) {
+    if (confirm("Yakin ingin menghapus semua transaksi?")) {
       transaksi = [];
       simpanData();
     }
   }
 
-  function hapusBarang(index) {
-    barang.splice(index, 1);
-    simpanData();
-  }
+  function showHistory(nama, kategori, subkategori) {
+    document.getElementById("modalNama").textContent = nama;
+    const ul = document.getElementById("modalIsi");
+    ul.innerHTML = "";
 
-  function tampilkanHistory(nama) {
-    const modal = document.getElementById("modalHistory");
-    const modalNama = document.getElementById("modalNama");
-    const modalIsi = document.getElementById("modalIsi");
+    const filtered = transaksi.filter(t =>
+      t.nama === nama && t.kategori === kategori && t.subkategori === subkategori
+    );
 
-    modalNama.textContent = nama;
-    modalIsi.innerHTML = "";
-
-    // Filter transaksi yang sesuai nama barang
-    const riwayat = transaksi.filter(t => t.nama === nama);
-
-    if (riwayat.length === 0) {
-      modalIsi.innerHTML = "<li>Tidak ada riwayat transaksi.</li>";
+    if (filtered.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "Belum ada transaksi untuk barang ini.";
+      ul.appendChild(li);
     } else {
-      riwayat.forEach(t => {
+      filtered.forEach(t => {
         const li = document.createElement("li");
-        li.textContent = `${t.waktu} - Jumlah: ${t.jumlah}, Total: ${formatRupiah(t.total)}, Stok awal: ${t.stokAwal}, Stok akhir: ${t.stokAkhir}`;
-        modalIsi.appendChild(li);
+        li.textContent = `${t.waktu} - Beli ${t.jumlah} pcs, stok dari ${t.stokAwal} → ${t.stokAkhir}`;
+        ul.appendChild(li);
       });
     }
 
-    modal.classList.remove("hidden");
+    document.getElementById("modalHistory").classList.remove("hidden");
   }
 
   function closeModal() {
     document.getElementById("modalHistory").classList.add("hidden");
   }
 
-  // Inisialisasi awal
+  function logout() {
+    alert("Logout berhasil (simulasi)!");
+    location.reload();
+  }
+
+  // Inisialisasi saat halaman dibuka
   simpanData();
 </script>
 </body>
