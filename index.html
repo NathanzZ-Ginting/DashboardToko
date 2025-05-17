@@ -48,7 +48,13 @@
 
     <!-- Riwayat Transaksi -->
     <section class="mb-8 bg-slate-800 p-4 rounded shadow">
-      <h2 class="text-2xl font-semibold mb-4">Riwayat Transaksi</h2>
+      <h2 class="text-2xl font-semibold mb-4 flex justify-between items-center">
+        Riwayat Transaksi
+        <button onclick="resetTransaksi()" 
+                class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded text-sm">
+          Reset Transaksi
+        </button>
+      </h2>
       <ul id="riwayatTransaksi" class="list-disc list-inside max-h-48 overflow-y-auto"></ul>
     </section>
 
@@ -150,7 +156,22 @@
     daftar.innerHTML = "";
     barang.forEach((b, i) => {
       const li = document.createElement("li");
-      li.textContent = `${b.nama} — Stok: ${b.stok} — Harga: ${formatRupiah(b.harga)}`;
+      li.classList.add("flex", "justify-between", "items-center", "mb-1");
+
+      const info = document.createElement("span");
+      info.textContent = `${b.nama} — Stok: ${b.stok} — Harga: ${formatRupiah(b.harga)}`;
+      
+      const btnHapus = document.createElement("button");
+      btnHapus.textContent = "Hapus";
+      btnHapus.classList.add("bg-red-600", "hover:bg-red-700", "text-white", "text-xs", "font-semibold", "py-1", "px-3", "rounded");
+      btnHapus.onclick = () => {
+        if(confirm(`Yakin hapus barang "${b.nama}"?`)) {
+          hapusBarang(i);
+        }
+      };
+
+      li.appendChild(info);
+      li.appendChild(btnHapus);
       daftar.appendChild(li);
     });
   }
@@ -181,6 +202,20 @@
     document.getElementById("totalPemasukan").textContent = formatRupiah(total);
   }
 
+  // Reset semua transaksi
+  function resetTransaksi() {
+    if (confirm("Yakin ingin menghapus semua riwayat transaksi?")) {
+      transaksi = [];
+      simpanData();
+    }
+  }
+
+  // Hapus barang berdasarkan index
+  function hapusBarang(index) {
+    barang.splice(index, 1);
+    simpanData();
+  }
+
   // Jalankan saat load pertama kali
   simpanData();
 
@@ -191,19 +226,11 @@
     });
   }
   function logout() {
-    if (confirm("Yakin ingin logout?")) {
-      localStorage.removeItem("loggedInUser");
+    if (confirm("Yakin logout?")) {
+      localStorage.clear();
       location.href = "login.html";
     }
   }
-
-  // Optional: Cegah akses langsung ke index.html tanpa login
-  document.addEventListener("DOMContentLoaded", () => {
-    const loggedInUser = localStorage.getItem("loggedInUser");
-    if (!loggedInUser) {
-      location.href = "login.html";
-    }
-  });
 </script>
 </body>
 </html>
