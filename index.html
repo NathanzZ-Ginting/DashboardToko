@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.json" />
+  <title>TokoKu QRIS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="auth.js"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen font-sans">
+  <div class="container mx-auto p-6 max-w-3xl">
+
+    <!-- Tombol Logout -->
+    <div class="text-right mb-4">
+      <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded">
+        Logout
+      </button>
+    </div>
+
+    <h1 class="text-4xl font-bold mb-6 text-center">Dashboard TokoKu</h1>
+
+    <!-- Ringkasan -->
+    <section class="mb-8 bg-slate-800 p-4 rounded shadow">
+      <h2 class="text-2xl font-semibold mb-2">Ringkasan</h2>
+      <p class="text-lg">Total Pemasukan: <span id="totalPemasukan" class="font-mono text-yellow-400">Rp0</span></p>
+    </section>
+
+    <!-- Form Tambah Barang -->
+    <section class="mb-8 bg-slate-800 p-4 rounded shadow">
+      <h2 class="text-2xl font-semibold mb-4">Tambah / Update Barang</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <input id="namaBarang" type="text" placeholder="Nama Barang" class="p-3 rounded text-black focus:outline-none" />
+        <input id="stokBarang" type="number" min="1" placeholder="Stok" class="p-3 rounded text-black focus:outline-none" />
+        <input id="hargaBarang" type="number" min="1000" step="100" placeholder="Harga (Rp)" class="p-3 rounded text-black focus:outline-none" />
+      </div>
+      <button onclick="tambahBarang()" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 transition rounded py-3 font-semibold">Simpan Barang</button>
+    </section>
+
+    <!-- Form Tambah Transaksi -->
+    <section class="mb-8 bg-slate-800 p-4 rounded shadow">
+      <h2 class="text-2xl font-semibold mb-4">Transaksi Baru</h2>
+      <select id="pilihBarang" class="w-full p-3 rounded text-black mb-4 focus:outline-none"></select>
+      <input id="jumlahBeli" type="number" min="1" placeholder="Jumlah Beli" class="w-full p-3 rounded text-black focus:outline-none" />
+      <button onclick="tambahTransaksi()" class="mt-4 w-full bg-green-600 hover:bg-green-700 transition rounded py-3 font-semibold">Tambah Transaksi</button>
+    </section>
+
+    <!-- Riwayat Transaksi -->
+    <section class="mb-8 bg-slate-800 p-4 rounded shadow">
+      <h2 class="text-2xl font-semibold mb-4">Riwayat Transaksi</h2>
+      <ul id="riwayatTransaksi" class="list-disc list-inside max-h-48 overflow-y-auto"></ul>
+    </section>
+
+    <!-- Daftar Barang -->
+    <section class="bg-slate-800 p-4 rounded shadow">
+      <h2 class="text-2xl font-semibold mb-4">Stok Barang</h2>
+      <ul id="daftarBarang" class="list-disc list-inside max-h-48 overflow-y-auto"></ul>
+    </section>
+  </div>
+
+<script>
+  // Format angka ke Rp dengan ribuan (contoh: Rp40.000)
+  function formatRupiah(angka) {
+    return 'Rp' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  let barang = JSON.parse(localStorage.getItem("barang")) || [];
+  let transaksi = JSON.parse(localStorage.getItem("transaksi")) || [];
+
+  function simpanData() {
+    localStorage.setItem("barang", JSON.stringify(barang));
+    localStorage.setItem("transaksi", JSON.stringify(transaksi));
+    renderBarang();
+    renderTransaksi();
+    updateSelect();
+    updatePemasukan();
+  }
+
+  function tambahBarang() {
+    const nama = document.getElementById("namaBarang").value.trim();
+    const stok = parseInt(document.getElementById("stokBarang").value);
+    const harga = parseInt(document.getElementById("hargaBarang").value);
+
+    if (!nama) {
+      alert("Nama barang harus diisi!");
+      return;
+    }
+    if (!(stok > 0)) {
+      alert("Stok harus angka lebih dari 0!");
+      return;
+    }
+    if (!(harga >= 1000)) {
+      alert("Harga harus angka minimal 1.000!");
+      return;
+    }
+
+    const index = barang.findIndex(b => b.nama.toLowerCase() === nama.toLowerCase());
+    if (index !== -1) {
+      // Update stok dan harga
+      barang[index].stok += stok;
+      barang[index].harga = harga;
+    } else {
+      barang.push({ nama, stok, harga });
+    }
+
+    simpanData();
+
+    // Reset input
+    document.getElementById("namaBarang").value = "";
+    document.getElementById("stokBarang").value = "";
+    document.getElementById("hargaBarang").value = "";
+  }
+
+  function tambahTransaksi() {
+    const index = document.getElementById("pilihBarang").value;
+    const jumlah = parseInt(document.getElementById("jumlahBeli").value);
+
+    if (index === "") {
+      alert("Pilih barang terlebih dahulu!");
+      return;
+    }
+    if (!(jumlah > 0)) {
+      alert("Jumlah beli harus lebih dari 0!");
+      return;
+    }
+    if (barang[index].stok < jumlah) {
+      alert("Stok tidak cukup!");
+      return;
+    }
+
+    const selected = barang[index];
+    selected.stok -= jumlah;
+
+    transaksi.push({
+      nama: selected.nama,
+      jumlah,
+      total: jumlah * selected.harga,
+      waktu: new Date().toLocaleString()
+    });
+
+    simpanData();
+
+    // Reset input jumlah beli
+    document.getElementById("jumlahBeli").value = "";
+  }
+
+  function renderBarang() {
+    const daftar = document.getElementById("daftarBarang");
+    daftar.innerHTML = "";
+    barang.forEach((b, i) => {
+      const li = document.createElement("li");
+      li.textContent = `${b.nama} — Stok: ${b.stok} — Harga: ${formatRupiah(b.harga)}`;
+      daftar.appendChild(li);
+    });
+  }
+
+  function renderTransaksi() {
+    const daftar = document.getElementById("riwayatTransaksi");
+    daftar.innerHTML = "";
+    transaksi.slice().reverse().forEach(t => {
+      const li = document.createElement("li");
+      li.textContent = `${t.waktu} - ${t.nama} (${t.jumlah}) = ${formatRupiah(t.total)}`;
+      daftar.appendChild(li);
+    });
+  }
+
+  function updateSelect() {
+    const select = document.getElementById("pilihBarang");
+    select.innerHTML = "<option value=''>Pilih Barang</option>";
+    barang.forEach((b, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `${b.nama} (Stok: ${b.stok})`;
+      select.appendChild(opt);
+    });
+  }
+
+  function updatePemasukan() {
+    const total = transaksi.reduce((sum, t) => sum + t.total, 0);
+    document.getElementById("totalPemasukan").textContent = formatRupiah(total);
+  }
+
+  // Jalankan saat load pertama kali
+  simpanData();
+
+  // PWA Service Worker registration (bisa buat offline support)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {
+      console.log("Service worker gagal didaftarkan");
+    });
+  }
+  function logout() {
+    if (confirm("Yakin ingin logout?")) {
+      localStorage.removeItem("loggedInUser");
+      location.href = "login.html";
+    }
+  }
+
+  // Optional: Cegah akses langsung ke index.html tanpa login
+  document.addEventListener("DOMContentLoaded", () => {
+    const loggedInUser = localStorage.getItem("loggedInUser");
+    if (!loggedInUser) {
+      location.href = "login.html";
+    }
+  });
+</script>
+</body>
+</html>
