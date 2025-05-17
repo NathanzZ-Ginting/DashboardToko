@@ -16,13 +16,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
   
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    // Username dan password yang diijinkan (hardcoded)
+    const validUsername = "admin";
+    const validPassword = "tokoku123";
   
-    const user = users.find(
-      (u) => u.username === username && u.password === password
-    );
-  
-    if (user) {
+    if (username === validUsername && password === validPassword) {
       localStorage.setItem("loggedInUser", username);
       window.location.href = "index.html";
     } else {
@@ -31,25 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function register() {
-    const username = prompt("Masukkan username baru:");
-    const password = prompt("Masukkan password baru:");
-  
-    if (!username || !password) {
-      alert("Registrasi dibatalkan.");
-      return;
-    }
-  
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-  
-    const exists = users.some((u) => u.username === username);
-    if (exists) {
-      alert("Username sudah digunakan.");
-      return;
-    }
-  
-    users.push({ username, password });
-    localStorage.setItem("users", JSON.stringify(users));
-    alert("Registrasi berhasil. Silakan login.");
+    alert("Registrasi tidak tersedia. Hubungi admin untuk pembuatan akun.");
   }
   
   function showAlert(message) {
