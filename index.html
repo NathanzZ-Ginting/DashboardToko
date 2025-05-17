@@ -63,10 +63,18 @@
       <h2 class="text-2xl font-semibold mb-4">Stok Barang</h2>
       <ul id="daftarBarang" class="list-disc list-inside max-h-48 overflow-y-auto"></ul>
     </section>
+
+    <!-- Modal History -->
+    <div id="modalHistory" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50">
+      <div class="bg-white text-black w-full max-w-md p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-semibold mb-4">History Barang: <span id="modalNama"></span></h3>
+        <ul id="modalIsi" class="list-disc list-inside max-h-64 overflow-y-auto text-sm"></ul>
+        <button onclick="closeModal()" class="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Tutup</button>
+      </div>
+    </div>
   </div>
 
 <script>
-  // Format angka ke Rp dengan ribuan (contoh: Rp40.000)
   function formatRupiah(angka) {
     return 'Rp' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   }
@@ -88,22 +96,13 @@
     const stok = parseInt(document.getElementById("stokBarang").value);
     const harga = parseInt(document.getElementById("hargaBarang").value);
 
-    if (!nama) {
-      alert("Nama barang harus diisi!");
-      return;
-    }
-    if (!(stok > 0)) {
-      alert("Stok harus angka lebih dari 0!");
-      return;
-    }
-    if (!(harga >= 1000)) {
-      alert("Harga harus angka minimal 1.000!");
+    if (!nama || !(stok > 0) || !(harga >= 1000)) {
+      alert("Lengkapi semua field dengan benar!");
       return;
     }
 
     const index = barang.findIndex(b => b.nama.toLowerCase() === nama.toLowerCase());
     if (index !== -1) {
-      // Update stok dan harga
       barang[index].stok += stok;
       barang[index].harga = harga;
     } else {
@@ -111,8 +110,6 @@
     }
 
     simpanData();
-
-    // Reset input
     document.getElementById("namaBarang").value = "";
     document.getElementById("stokBarang").value = "";
     document.getElementById("hargaBarang").value = "";
@@ -122,32 +119,25 @@
     const index = document.getElementById("pilihBarang").value;
     const jumlah = parseInt(document.getElementById("jumlahBeli").value);
 
-    if (index === "") {
-      alert("Pilih barang terlebih dahulu!");
-      return;
-    }
-    if (!(jumlah > 0)) {
-      alert("Jumlah beli harus lebih dari 0!");
-      return;
-    }
-    if (barang[index].stok < jumlah) {
-      alert("Stok tidak cukup!");
+    if (index === "" || !(jumlah > 0) || barang[index].stok < jumlah) {
+      alert("Periksa input jumlah atau stok!");
       return;
     }
 
     const selected = barang[index];
+    const stokSebelum = selected.stok;
     selected.stok -= jumlah;
 
     transaksi.push({
       nama: selected.nama,
       jumlah,
       total: jumlah * selected.harga,
-      waktu: new Date().toLocaleString()
+      waktu: new Date().toLocaleString(),
+      stokAwal: stokSebelum,
+      stokAkhir: selected.stok
     });
 
     simpanData();
-
-    // Reset input jumlah beli
     document.getElementById("jumlahBeli").value = "";
   }
 
@@ -159,8 +149,10 @@
       li.classList.add("flex", "justify-between", "items-center", "mb-1");
 
       const info = document.createElement("span");
+      info.classList.add("cursor-pointer", "hover:underline", "text-blue-400");
       info.textContent = `${b.nama} — Stok: ${b.stok} — Harga: ${formatRupiah(b.harga)}`;
-      
+      info.onclick = () => tampilkanHistory(b.nama);
+
       const btnHapus = document.createElement("button");
       btnHapus.textContent = "Hapus";
       btnHapus.classList.add("bg-red-600", "hover:bg-red-700", "text-white", "text-xs", "font-semibold", "py-1", "px-3", "rounded");
@@ -202,7 +194,6 @@
     document.getElementById("totalPemasukan").textContent = formatRupiah(total);
   }
 
-  // Reset semua transaksi
   function resetTransaksi() {
     if (confirm("Yakin ingin menghapus semua riwayat transaksi?")) {
       transaksi = [];
@@ -210,21 +201,45 @@
     }
   }
 
-  // Hapus barang berdasarkan index
   function hapusBarang(index) {
     barang.splice(index, 1);
     simpanData();
   }
 
-  // Jalankan saat load pertama kali
+  function tampilkanHistory(nama) {
+    const isi = document.getElementById("modalIsi");
+    const modal = document.getElementById("modalHistory");
+    const label = document.getElementById("modalNama");
+
+    label.textContent = nama;
+    isi.innerHTML = "";
+
+    const related = transaksi.filter(t => t.nama === nama);
+    if (related.length === 0) {
+      isi.innerHTML = "<li>Belum ada transaksi</li>";
+    } else {
+      related.slice().reverse().forEach(t => {
+        const li = document.createElement("li");
+        li.textContent = `${t.waktu} — Beli: ${t.jumlah}, Stok: ${t.stokAwal}→${t.stokAkhir}, Total: ${formatRupiah(t.total)}`;
+        isi.appendChild(li);
+      });
+    }
+
+    modal.classList.remove("hidden");
+  }
+
+  function closeModal() {
+    document.getElementById("modalHistory").classList.add("hidden");
+  }
+
   simpanData();
 
-  // PWA Service Worker registration (bisa buat offline support)
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("service-worker.js").catch(() => {
       console.log("Service worker gagal didaftarkan");
     });
   }
+
   function logout() {
     if (confirm("Yakin logout?")) {
       localStorage.clear();
