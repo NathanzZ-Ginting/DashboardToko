@@ -1,3 +1,5 @@
+// login.js
+
 document.addEventListener("DOMContentLoaded", () => {
     // Redirect ke index jika sudah login
     const loggedInUser = localStorage.getItem("loggedInUser");
@@ -21,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const validPassword = "tokoku123";
   
     if (username === validUsername && password === validPassword) {
+      // Simpan status login
       localStorage.setItem("loggedInUser", username);
       window.location.href = "index.html";
     } else {
