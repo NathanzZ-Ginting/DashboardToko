@@ -6,13 +6,14 @@
   <meta name="theme-color" content="#0f172a" />
   <title>TokoKu QRIS</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="auth.js"></script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans">
   <div class="container mx-auto p-6 max-w-3xl">
 
     <!-- Tombol Logout -->
     <div class="text-right mb-4">
-      <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded">
+      <button onclick="logout()" class="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">
         Logout
       </button>
     </div>
@@ -26,19 +27,45 @@
     </section>
 
     <!-- Form Tambah Barang -->
-    <section class="mb-8 bg-slate-800 p-4 rounded shadow">
-      <h2 class="text-2xl font-semibold mb-4">Tambah / Update Barang</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <input id="namaBarang" type="text" placeholder="Nama Barang" class="p-3 rounded text-black focus:outline-none" />
-        <input id="stokBarang" type="number" min="1" placeholder="Stok" class="p-3 rounded text-black focus:outline-none" />
-        <input id="hargaBarang" type="number" min="1000" step="100" placeholder="Harga (Rp)" class="p-3 rounded text-black focus:outline-none" />
-        <select id="kategoriBarang" class="p-3 rounded text-black focus:outline-none">
-          <option value="">Pilih Kategori</option>
-          <option value="Anak-Anak">Anak-Anak</option>
-          <option value="Pria">Pria</option>
-          <option value="Wanita">Wanita</option>
-        </select>
+    <section class="mb-8 bg-white dark:bg-slate-800 p-6 rounded-lg shadow max-w-4xl mx-auto">
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">Tambah / Update Barang</h2>
+    
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    
+        <!-- Nama Barang -->
+        <div>
+          <label for="namaBarang" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Barang</label>
+          <input id="namaBarang" type="text" placeholder="Nama Barang"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+        </div>
+    
+        <!-- Stok -->
+        <div>
+          <label for="stokBarang" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Stok Barang</label>
+          <input id="stokBarang" type="number" min="1" placeholder="Jumlah Stok"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+        </div>
+    
+        <!-- Harga -->
+        <div>
+          <label for="hargaBarang" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga (Rp)</label>
+          <input id="hargaBarang" type="number" min="1000" step="100" placeholder="Masukkan Harga"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+        </div>
+
+        <!-- Kategori -->
+        <div>
+          <label for="kategoriBarang" class="sr-only">Pilih Kategori</label>
+          <select id="kategoriBarang"
+            class="block py-2.5 px-0 w-full text-sm text-gray-500 bg-transparent border-0 border-b-2 border-gray-200 appearance-none dark:text-gray-400 dark:border-gray-700 focus:outline-none focus:ring-0 focus:border-gray-200 peer">
+            <option value="" selected>Pilih Kategori</option>
+            <option value="Anak-Anak">Anak-Anak</option>
+            <option value="Pria">Pria</option>
+            <option value="Wanita">Wanita</option>
+          </select>
+        </div>
       </div>
+
       <div class="mt-2">
         <select id="subkategoriBarang" class="p-3 rounded text-black focus:outline-none hidden">
           <option value="">Pilih Subkategori</option>
@@ -46,15 +73,17 @@
           <option value="Celana Dalam">Celana Dalam</option>
         </select>
       </div>
-      <button onclick="tambahBarang()" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 transition rounded py-3 font-semibold">Simpan Barang</button>
+      <button onclick="tambahBarang()" class="mt-4 w-full text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 transition font-semibold rounded py-3 text-center dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-600">Simpan Barang</button>
     </section>
+
+  
 
     <!-- Form Tambah Transaksi -->
     <section class="mb-8 bg-slate-800 p-4 rounded shadow">
       <h2 class="text-2xl font-semibold mb-4">Transaksi Baru</h2>
       <select id="pilihBarang" class="w-full p-3 rounded text-black mb-4 focus:outline-none"></select>
       <input id="jumlahBeli" type="number" min="1" placeholder="Jumlah Beli" class="w-full p-3 rounded text-black focus:outline-none" />
-      <button onclick="tambahTransaksi()" class="mt-4 w-full bg-green-600 hover:bg-green-700 transition rounded py-3 font-semibold">Tambah Transaksi</button>
+      <button onclick="tambahTransaksi()" class="mt-4 w-full text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 transition font-semibold rounded py-3 text-center dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800">Tambah Transaksi</button>
     </section>
 
     <!-- Riwayat Transaksi -->
@@ -245,7 +274,7 @@
   }
 
   function resetTransaksi() {
-    if (confirm("Yakin ingin menghapus semua transaksi?")) {
+    if (confirm(" ingin menghapus semua transaksi?")) {
       transaksi = [];
       simpanData();
     }
@@ -280,12 +309,14 @@
   }
 
   function logout() {
-    alert("Logout berhasil (simulasi)!");
-    location.reload();
+    if (confirm("Yakin logout?")) {
+      localStorage.clear();
+      location.href = "login.html";
+    }
   }
-
   // Inisialisasi saat halaman dibuka
   simpanData();
 </script>
 </body>
 </html>
+
