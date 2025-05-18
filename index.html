@@ -8,7 +8,64 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="auth.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPLBviiCUYDn94abZKlNVSttDkH9P5np0",
+      authDomain: "dashboard-modeza.firebaseapp.com",
+      projectId: "dashboard-modeza",
+      storageBucket: "dashboard-modeza.firebasestorage.app",
+      messagingSenderId: "102159360772",
+      appId: "1:102159360772:web:7075c5829788c5b192a651"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+  
+    // Simpan data ke Firestore
+    async function simpanKeFirestore() {
+      try {
+        await setDoc(doc(db, "data", "barang"), { barang });
+        await setDoc(doc(db, "data", "transaksi"), { transaksi });
+      } catch (error) {
+        console.error("Gagal menyimpan ke Firestore:", error);
+      }
+    }
+  
+    // Ambil data dari Firestore
+    async function ambilDariFirestore() {
+      try {
+        const barangSnap = await getDoc(doc(db, "data", "barang"));
+        const transaksiSnap = await getDoc(doc(db, "data", "transaksi"));
+  
+        barang = barangSnap.exists() ? barangSnap.data().barang : [];
+        transaksi = transaksiSnap.exists() ? transaksiSnap.data().transaksi : [];
+  
+        simpanData();
+      } catch (error) {
+        console.error("Gagal mengambil dari Firestore:", error);
+      }
+    }
+  
+    // Override fungsi simpanData()
+    window.simpanData = function () {
+      localStorage.setItem("barang", JSON.stringify(barang));
+      localStorage.setItem("transaksi", JSON.stringify(transaksi));
+      renderBarang();
+      renderTransaksi();
+      updateSelect();
+      updatePemasukan();
+      simpanKeFirestore();
+    };
+  
+    // Panggil data saat halaman dibuka
+    ambilDariFirestore();
+  </script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans">
   <div class="container mx-auto p-6 max-w-3xl">
