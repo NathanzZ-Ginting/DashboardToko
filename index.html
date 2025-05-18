@@ -5,14 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0f172a" />
   <title>Modeza</title>
+
+  <!-- Tailwind & Flowbite -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="auth.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+
+  <!-- Auth (jika ada login/logout) -->
+  <script src="auth.js"></script>
+
+  <!-- Firebase via ES Module -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyAPLBviiCUYDn94abZKlNVSttDkH9P5np0",
       authDomain: "dashboard-modeza.firebaseapp.com",
@@ -21,36 +27,38 @@
       messagingSenderId: "102159360772",
       appId: "1:102159360772:web:7075c5829788c5b192a651"
     };
-  
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-  
-    // Simpan data ke Firestore
+
+    // Global agar bisa diakses window
+    window.db = db;
+
     async function simpanKeFirestore() {
       try {
         await setDoc(doc(db, "data", "barang"), { barang });
         await setDoc(doc(db, "data", "transaksi"), { transaksi });
+        console.log("✅ Data berhasil disimpan ke Firestore");
       } catch (error) {
-        console.error("Gagal menyimpan ke Firestore:", error);
+        console.error("❌ Gagal menyimpan ke Firestore:", error);
       }
     }
-  
-    // Ambil data dari Firestore
+
     async function ambilDariFirestore() {
       try {
         const barangSnap = await getDoc(doc(db, "data", "barang"));
         const transaksiSnap = await getDoc(doc(db, "data", "transaksi"));
-  
+
         barang = barangSnap.exists() ? barangSnap.data().barang : [];
         transaksi = transaksiSnap.exists() ? transaksiSnap.data().transaksi : [];
-  
+
         simpanData();
+        console.log("✅ Data berhasil diambil dari Firestore");
       } catch (error) {
-        console.error("Gagal mengambil dari Firestore:", error);
+        console.error("❌ Gagal mengambil data dari Firestore:", error);
       }
     }
-  
-    // Override fungsi simpanData()
+
     window.simpanData = function () {
       localStorage.setItem("barang", JSON.stringify(barang));
       localStorage.setItem("transaksi", JSON.stringify(transaksi));
@@ -60,8 +68,7 @@
       updatePemasukan();
       simpanKeFirestore();
     };
-  
-    // Panggil data saat halaman dibuka
+
     ambilDariFirestore();
   </script>
 </head>
@@ -220,14 +227,32 @@ class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 d
     }
   });
 
-  function simpanData() {
-    localStorage.setItem("barang", JSON.stringify(barang));
-    localStorage.setItem("transaksi", JSON.stringify(transaksi));
-    renderBarang();
-    renderTransaksi();
-    updateSelect();
-    updatePemasukan();
+  async function firebaseSaveToFirestore() {
+  const docRef1 = doc(window.db, "data", "barang");
+  const docRef2 = doc(window.db, "data", "transaksi");
+  await setDoc(docRef1, { barang });
+  await setDoc(docRef2, { transaksi });
+  console.log("✅ Data disimpan ke Firestore");
+}
+
+async function simpanData() {
+  localStorage.setItem("barang", JSON.stringify(barang));
+  localStorage.setItem("transaksi", JSON.stringify(transaksi));
+  renderBarang();
+  renderTransaksi();
+  updateSelect();
+  updatePemasukan();
+
+  if (typeof window.db !== "undefined") {
+    try {
+      await firebaseSaveToFirestore();
+    } catch (e) {
+      console.error("❌ Firestore gagal disimpan:", e);
+    }
+  } else {
+    console.warn("⚠️ Firestore belum siap.");
   }
+}
 
   function tambahBarang() {
     const nama = document.getElementById("namaBarang").value.trim();
