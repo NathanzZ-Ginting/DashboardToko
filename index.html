@@ -7,6 +7,8 @@
   <title>TokoKu QRIS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans">
   <div class="container mx-auto p-6 max-w-3xl">
@@ -53,17 +55,47 @@
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
         </div>
 
-        <!-- Kategori -->
+        <!-- Dropdown Kategori -->
         <div>
-          <label for="kategoriBarang" class="sr-only">Pilih Kategori</label>
-          <select id="kategoriBarang"
-            class="block py-2.5 px-0 w-full text-sm text-gray-500 bg-transparent border-0 border-b-2 border-gray-200 appearance-none dark:text-gray-400 dark:border-gray-700 focus:outline-none focus:ring-0 focus:border-gray-200 peer">
-            <option value="" selected>Pilih Kategori</option>
-            <option value="Anak-Anak">Anak-Anak</option>
-            <option value="Pria">Pria</option>
-            <option value="Wanita">Wanita</option>
-          </select>
+          <label for="kategoriBarang" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Kategori</label>
+          
+          <!-- Hidden input untuk menyimpan value -->
+          <input type="hidden" id="kategoriBarang" name="kategoriBarang" />
+        
+          <button id="dropdownKategoriButton" data-dropdown-toggle="dropdownKategoriMenu" data-dropdown-trigger="click"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 flex justify-between items-center dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            type="button">
+            Pilih Kategori
+            <svg class="w-2.5 h-2.5 ml-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 10 6">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="m1 1 4 4 4-4" />
+            </svg>
+          </button>
         </div>
+
+<!-- Dropdown menu -->
+<div id="dropdownKategoriMenu"
+class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700">
+<ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownKategoriButton">
+  <li>
+    <a href="#" data-value="Anak-Anak"
+      class="kategori-option block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Anak-Anak</a>
+  </li>
+  <li>
+    <a href="#" data-value="Pria"
+      class="kategori-option block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Pria</a>
+  </li>
+  <li>
+    <a href="#" data-value="Wanita"
+      class="kategori-option block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Wanita</a>
+  </li>
+</ul>
+</div>
+
+<!-- Optional: Hidden input untuk menyimpan value yang dipilih -->
+
+        
       </div>
 
       <div class="mt-2">
@@ -82,7 +114,7 @@
     <section class="mb-8 bg-slate-800 p-4 rounded shadow">
       <h2 class="text-2xl font-semibold mb-4">Transaksi Baru</h2>
       <select id="pilihBarang" class="w-full p-3 rounded text-black mb-4 focus:outline-none"></select>
-      <input id="jumlahBeli" type="number" min="1" placeholder="Jumlah Beli" class="w-full p-3 rounded text-black focus:outline-none" />
+      <input id="jumlahBeli" type="number" min="1" placeholder="Jumlah Beli" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
       <button onclick="tambahTransaksi()" class="mt-4 w-full text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 transition font-semibold rounded py-3 text-center dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800">Tambah Transaksi</button>
     </section>
 
@@ -314,6 +346,14 @@
       location.href = "login.html";
     }
   }
+  document.querySelectorAll('.kategori-option').forEach(item => {
+    item.addEventListener('click', function (e) {
+      e.preventDefault();
+      const selectedValue = this.getAttribute('data-value');
+      document.getElementById('dropdownKategoriButton').innerText = selectedValue;
+      document.getElementById('kategoriBarang').value = selectedValue;
+    });
+  });
   // Inisialisasi saat halaman dibuka
   simpanData();
 </script>
