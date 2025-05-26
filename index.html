@@ -13,64 +13,6 @@
 
   <!-- Auth (jika ada login/logout) -->
   <script src="auth.js"></script>
-
-  <!-- Firebase via ES Module -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAPLBviiCUYDn94abZKlNVSttDkH9P5np0",
-      authDomain: "dashboard-modeza.firebaseapp.com",
-      projectId: "dashboard-modeza",
-      storageBucket: "dashboard-modeza.firebasestorage.app",
-      messagingSenderId: "102159360772",
-      appId: "1:102159360772:web:7075c5829788c5b192a651"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Global agar bisa diakses window
-    window.db = db;
-
-    async function simpanKeFirestore() {
-      try {
-        await setDoc(doc(db, "data", "barang"), { barang });
-        await setDoc(doc(db, "data", "transaksi"), { transaksi });
-        console.log("✅ Data berhasil disimpan ke Firestore");
-      } catch (error) {
-        console.error("❌ Gagal menyimpan ke Firestore:", error);
-      }
-    }
-
-    async function ambilDariFirestore() {
-      try {
-        const barangSnap = await getDoc(doc(db, "data", "barang"));
-        const transaksiSnap = await getDoc(doc(db, "data", "transaksi"));
-
-        barang = barangSnap.exists() ? barangSnap.data().barang : [];
-        transaksi = transaksiSnap.exists() ? transaksiSnap.data().transaksi : [];
-
-        simpanData();
-        console.log("✅ Data berhasil diambil dari Firestore");
-      } catch (error) {
-        console.error("❌ Gagal mengambil data dari Firestore:", error);
-      }
-    }
-
-    window.simpanData = function () {
-      localStorage.setItem("barang", JSON.stringify(barang));
-      localStorage.setItem("transaksi", JSON.stringify(transaksi));
-      renderBarang();
-      renderTransaksi();
-      updateSelect();
-      updatePemasukan();
-      simpanKeFirestore();
-    };
-
-    ambilDariFirestore();
-  </script>
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans">
   <div class="container mx-auto p-6 max-w-3xl">
@@ -209,234 +151,216 @@ class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 d
 
 <script>
   function formatRupiah(angka) {
-    return 'Rp' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  }
-
-  let barang = JSON.parse(localStorage.getItem("barang")) || [];
-  let transaksi = JSON.parse(localStorage.getItem("transaksi")) || [];
-
-  const kategoriSelect = document.getElementById("kategoriBarang");
-  const subkategoriSelect = document.getElementById("subkategoriBarang");
-
-  kategoriSelect.addEventListener("change", () => {
-    if (kategoriSelect.value === "Anak-Anak") {
-      subkategoriSelect.classList.remove("hidden");
-    } else {
-      subkategoriSelect.classList.add("hidden");
-      subkategoriSelect.value = "";
-    }
-  });
-
-  async function firebaseSaveToFirestore() {
-  const docRef1 = doc(window.db, "data", "barang");
-  const docRef2 = doc(window.db, "data", "transaksi");
-  await setDoc(docRef1, { barang });
-  await setDoc(docRef2, { transaksi });
-  console.log("✅ Data disimpan ke Firestore");
+  return 'Rp' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-async function simpanData() {
+let barang = JSON.parse(localStorage.getItem("barang")) || [];
+let transaksi = JSON.parse(localStorage.getItem("transaksi")) || [];
+
+const kategoriSelect = document.getElementById("kategoriBarang");
+const subkategoriSelect = document.getElementById("subkategoriBarang");
+
+kategoriSelect.addEventListener("change", () => {
+  if (kategoriSelect.value === "Anak-Anak") {
+    subkategoriSelect.classList.remove("hidden");
+  } else {
+    subkategoriSelect.classList.add("hidden");
+    subkategoriSelect.value = "";
+  }
+});
+
+function simpanData() {
   localStorage.setItem("barang", JSON.stringify(barang));
   localStorage.setItem("transaksi", JSON.stringify(transaksi));
   renderBarang();
   renderTransaksi();
   updateSelect();
   updatePemasukan();
+}
 
-  if (typeof window.db !== "undefined") {
-    try {
-      await firebaseSaveToFirestore();
-    } catch (e) {
-      console.error("❌ Firestore gagal disimpan:", e);
-    }
+function tambahBarang() {
+  const nama = document.getElementById("namaBarang").value.trim();
+  const stok = parseInt(document.getElementById("stokBarang").value);
+  const harga = parseInt(document.getElementById("hargaBarang").value);
+  const kategori = kategoriSelect.value;
+  const subkategori = subkategoriSelect.value;
+
+  if (!nama || !(stok > 0) || !(harga >= 1000) || !kategori) {
+    alert("Lengkapi semua field dengan benar!");
+    return;
+  }
+  if (kategori === "Anak-Anak" && !subkategori) {
+    alert("Pilih subkategori untuk kategori Anak-Anak!");
+    return;
+  }
+
+  const index = barang.findIndex(b => 
+    b.nama.toLowerCase() === nama.toLowerCase() &&
+    b.kategori === kategori &&
+    b.subkategori === subkategori
+  );
+
+  if (index !== -1) {
+    barang[index].stok += stok;
+    barang[index].harga = harga;
   } else {
-    console.warn("⚠️ Firestore belum siap.");
+    barang.push({ nama, stok, harga, kategori, subkategori });
+  }
+
+  simpanData();
+  document.getElementById("namaBarang").value = "";
+  document.getElementById("stokBarang").value = "";
+  document.getElementById("hargaBarang").value = "";
+  kategoriSelect.value = "";
+  subkategoriSelect.value = "";
+  subkategoriSelect.classList.add("hidden");
+}
+
+function tambahTransaksi() {
+  const index = document.getElementById("pilihBarang").value;
+  const jumlah = parseInt(document.getElementById("jumlahBeli").value);
+
+  if (index === "" || !(jumlah > 0) || barang[index].stok < jumlah) {
+    alert("Periksa input jumlah atau stok!");
+    return;
+  }
+
+  const selected = barang[index];
+  const stokSebelum = selected.stok;
+  selected.stok -= jumlah;
+
+  transaksi.push({
+    nama: selected.nama,
+    jumlah,
+    total: jumlah * selected.harga,
+    waktu: new Date().toLocaleString(),
+    stokAwal: stokSebelum,
+    stokAkhir: selected.stok,
+    kategori: selected.kategori,
+    subkategori: selected.subkategori,
+  });
+
+  simpanData();
+  if (selected.stok <= 3) {
+    alert(`Stok barang "${selected.nama}" hampir habis (${selected.stok} tersisa)!`);
+  }
+
+  document.getElementById("jumlahBeli").value = "";
+  document.getElementById("pilihBarang").value = "";
+}
+
+function renderBarang() {
+  const list = document.getElementById("daftarBarang");
+  list.innerHTML = "";
+
+  barang.forEach((b, i) => {
+    const li = document.createElement("li");
+    li.className = "flex justify-between items-center mb-2";
+
+    const info = document.createElement("span");
+    info.className = "cursor-pointer hover:underline " + (b.stok <= 3 ? "text-red-500" : "");
+    info.textContent = `${b.nama} (${b.kategori}${b.subkategori ? " > " + b.subkategori : ""}) - Stok: ${b.stok} - Harga: ${formatRupiah(b.harga)}`;
+    info.title = "Klik untuk lihat history";
+    info.onclick = () => showHistory(b.nama, b.kategori, b.subkategori);
+
+    const btn = document.createElement("button");
+    btn.textContent = "Hapus";
+    btn.className = "ml-4 px-2 py-1 text-sm rounded bg-red-600 hover:bg-red-700 text-white";
+    btn.onclick = () => hapusBarang(i);
+
+    li.appendChild(info);
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+}
+
+function hapusBarang(index) {
+  if (confirm(`Yakin ingin menghapus barang "${barang[index].nama}"?`)) {
+    barang.splice(index, 1);
+    simpanData();
   }
 }
 
-  function tambahBarang() {
-    const nama = document.getElementById("namaBarang").value.trim();
-    const stok = parseInt(document.getElementById("stokBarang").value);
-    const harga = parseInt(document.getElementById("hargaBarang").value);
-    const kategori = kategoriSelect.value;
-    const subkategori = subkategoriSelect.value;
-
-    if (!nama || !(stok > 0) || !(harga >= 1000) || !kategori) {
-      alert("Lengkapi semua field dengan benar!");
-      return;
-    }
-    if (kategori === "Anak-Anak" && !subkategori) {
-      alert("Pilih subkategori untuk kategori Anak-Anak!");
-      return;
-    }
-
-    const index = barang.findIndex(b => 
-      b.nama.toLowerCase() === nama.toLowerCase() &&
-      b.kategori === kategori &&
-      b.subkategori === subkategori
-    );
-
-    if (index !== -1) {
-      barang[index].stok += stok;
-      barang[index].harga = harga;
-    } else {
-      barang.push({ nama, stok, harga, kategori, subkategori });
-    }
-
-    simpanData();
-    document.getElementById("namaBarang").value = "";
-    document.getElementById("stokBarang").value = "";
-    document.getElementById("hargaBarang").value = "";
-    kategoriSelect.value = "";
-    subkategoriSelect.value = "";
-    subkategoriSelect.classList.add("hidden");
-  }
-
-  function tambahTransaksi() {
-    const index = document.getElementById("pilihBarang").value;
-    const jumlah = parseInt(document.getElementById("jumlahBeli").value);
-
-    if (index === "" || !(jumlah > 0) || barang[index].stok < jumlah) {
-      alert("Periksa input jumlah atau stok!");
-      return;
-    }
-
-    const selected = barang[index];
-    const stokSebelum = selected.stok;
-    selected.stok -= jumlah;
-
-    transaksi.push({
-      nama: selected.nama,
-      jumlah,
-      total: jumlah * selected.harga,
-      waktu: new Date().toLocaleString(),
-      stokAwal: stokSebelum,
-      stokAkhir: selected.stok,
-      kategori: selected.kategori,
-      subkategori: selected.subkategori,
-    });
-
-    simpanData();
-    if (selected.stok <= 3) {
-      alert(`Stok barang "${selected.nama}" hampir habis (${selected.stok} tersisa)!`);
-    }
-
-    document.getElementById("jumlahBeli").value = "";
-    document.getElementById("pilihBarang").value = "";
-  }
-
-  function renderBarang() {
-    const list = document.getElementById("daftarBarang");
-    list.innerHTML = "";
-
-    barang.forEach((b, i) => {
-      const li = document.createElement("li");
-      li.className = "flex justify-between items-center mb-2";
-
-      const info = document.createElement("span");
-      info.className = "cursor-pointer hover:underline " + (b.stok <= 3 ? "text-red-500" : "");
-      info.textContent = `${b.nama} (${b.kategori}${b.subkategori ? " > " + b.subkategori : ""}) - Stok: ${b.stok} - Harga: ${formatRupiah(b.harga)}`;
-      info.title = "Klik untuk lihat history";
-      info.onclick = () => showHistory(b.nama, b.kategori, b.subkategori);
-
-      const btn = document.createElement("button");
-      btn.textContent = "Hapus";
-      btn.className = "ml-4 px-2 py-1 text-sm rounded bg-red-600 hover:bg-red-700 text-white";
-      btn.onclick = () => hapusBarang(i);
-
-      li.appendChild(info);
-      li.appendChild(btn);
-      list.appendChild(li);
-    });
-  }
-
-  function hapusBarang(index) {
-    if (confirm(`Yakin ingin menghapus barang "${barang[index].nama}"?`)) {
-      barang.splice(index, 1);
-      simpanData();
-    }
-  }
-
-
-  function renderTransaksi() {
-    const list = document.getElementById("riwayatTransaksi");
-    list.innerHTML = "";
-    transaksi.forEach(t => {
-      const li = document.createElement("li");
-      li.className = t.stokAkhir <= 3 ? "text-red-500" : "";
-      li.textContent = `${t.waktu} - ${t.nama} (${t.kategori}${t.subkategori ? " > " + t.subkategori : ""}) - ${t.jumlah} x ${formatRupiah(t.total / t.jumlah)} = ${formatRupiah(t.total)}`;
-      list.appendChild(li);
-    });
-  }
-
-  function updateSelect() {
-    const select = document.getElementById("pilihBarang");
-    select.innerHTML = '<option value="">Pilih Barang</option>';
-    barang.forEach((b, i) => {
-      const opt = document.createElement("option");
-      opt.value = i;
-      opt.textContent = `${b.nama} (${b.kategori}${b.subkategori ? " > " + b.subkategori : ""}) - Stok: ${b.stok}`;
-      select.appendChild(opt);
-    });
-  }
-
-  function updatePemasukan() {
-    const total = transaksi.reduce((acc, curr) => acc + curr.total, 0);
-    document.getElementById("totalPemasukan").textContent = formatRupiah(total);
-  }
-
-  function resetTransaksi() {
-    if (confirm(" ingin menghapus semua transaksi?")) {
-      transaksi = [];
-      simpanData();
-    }
-  }
-
-  function showHistory(nama, kategori, subkategori) {
-    document.getElementById("modalNama").textContent = nama;
-    const ul = document.getElementById("modalIsi");
-    ul.innerHTML = "";
-
-    const filtered = transaksi.filter(t =>
-      t.nama === nama && t.kategori === kategori && t.subkategori === subkategori
-    );
-
-    if (filtered.length === 0) {
-      const li = document.createElement("li");
-      li.textContent = "Belum ada transaksi untuk barang ini.";
-      ul.appendChild(li);
-    } else {
-      filtered.forEach(t => {
-        const li = document.createElement("li");
-        li.textContent = `${t.waktu} - Beli ${t.jumlah} pcs, stok dari ${t.stokAwal} → ${t.stokAkhir}`;
-        ul.appendChild(li);
-      });
-    }
-
-    document.getElementById("modalHistory").classList.remove("hidden");
-  }
-
-  function closeModal() {
-    document.getElementById("modalHistory").classList.add("hidden");
-  }
-
-  function logout() {
-    if (confirm("Yakin logout?")) {
-      localStorage.clear();
-      location.href = "login.html";
-    }
-  }
-  document.querySelectorAll('.kategori-option').forEach(item => {
-    item.addEventListener('click', function (e) {
-      e.preventDefault();
-      const selectedValue = this.getAttribute('data-value');
-      document.getElementById('dropdownKategoriButton').innerText = selectedValue;
-      document.getElementById('kategoriBarang').value = selectedValue;
-    });
+function renderTransaksi() {
+  const list = document.getElementById("riwayatTransaksi");
+  list.innerHTML = "";
+  transaksi.forEach(t => {
+    const li = document.createElement("li");
+    li.className = t.stokAkhir <= 3 ? "text-red-500" : "";
+    li.textContent = `${t.waktu} - ${t.nama} (${t.kategori}${t.subkategori ? " > " + t.subkategori : ""}) - ${t.jumlah} x ${formatRupiah(t.total / t.jumlah)} = ${formatRupiah(t.total)}`;
+    list.appendChild(li);
   });
-  
-  // Inisialisasi saat halaman dibuka
-  simpanData();
+}
+
+function updateSelect() {
+  const select = document.getElementById("pilihBarang");
+  select.innerHTML = '<option value="">Pilih Barang</option>';
+  barang.forEach((b, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `${b.nama} (${b.kategori}${b.subkategori ? " > " + b.subkategori : ""}) - Stok: ${b.stok}`;
+    select.appendChild(opt);
+  });
+}
+
+function updatePemasukan() {
+  const total = transaksi.reduce((acc, curr) => acc + curr.total, 0);
+  document.getElementById("totalPemasukan").textContent = formatRupiah(total);
+}
+
+function resetTransaksi() {
+  if (confirm(" ingin menghapus semua transaksi?")) {
+    transaksi = [];
+    simpanData();
+  }
+}
+
+function showHistory(nama, kategori, subkategori) {
+  document.getElementById("modalNama").textContent = nama;
+  const ul = document.getElementById("modalIsi");
+  ul.innerHTML = "";
+
+  const filtered = transaksi.filter(t =>
+    t.nama === nama && t.kategori === kategori && t.subkategori === subkategori
+  );
+
+  if (filtered.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "Belum ada transaksi untuk barang ini.";
+    ul.appendChild(li);
+  } else {
+    filtered.forEach(t => {
+      const li = document.createElement("li");
+      li.textContent = `${t.waktu} - Beli ${t.jumlah} pcs, stok dari ${t.stokAwal} → ${t.stokAkhir}`;
+      ul.appendChild(li);
+    });
+  }
+
+  document.getElementById("modalHistory").classList.remove("hidden");
+}
+
+function closeModal() {
+  document.getElementById("modalHistory").classList.add("hidden");
+}
+
+function logout() {
+  if (confirm("Yakin logout?")) {
+    localStorage.clear();
+    location.href = "login.html";
+  }
+}
+
+document.querySelectorAll('.kategori-option').forEach(item => {
+  item.addEventListener('click', function (e) {
+    e.preventDefault();
+    const selectedValue = this.getAttribute('data-value');
+    document.getElementById('dropdownKategoriButton').innerText = selectedValue;
+    document.getElementById('kategoriBarang').value = selectedValue;
+  });
+});
+
+// Inisialisasi saat halaman dibuka
+simpanData();
 </script>
 </body>
 </html>
